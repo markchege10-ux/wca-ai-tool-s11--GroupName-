@@ -75,3 +75,4 @@ Follow the on-screen menu:
 
 - Group name: _fill in_
 - Members: _fill in all 4 names + GitHub usernames_
+# wca-ai-tool-s11--GroupName-
