@@ -10,6 +10,20 @@ A two-stage AI-powered tool:
 
 Group: [Your Group Name Here]
 Members: [Add all 4 names here]
+
+--------------------------------------------------------------------------
+ROLES (see "YOUR TASK" comments throughout this file):
+  - Person A (Lead)              -> SECTION 0: Setup & API connector
+  - Person B (Stage 1 Developer) -> SECTION 1: Analyse reviews
+  - Person C (Stage 2 Developer) -> SECTION 2: Draft reply
+  - Person D (Docs/Error Lead)   -> SECTION 3: File saving
+                                     SECTION 4: Menu & main program loop
+
+IMPORTANT: Each function's docstring tells you exactly what parameters it
+receives and what it must return. Stick to this "contract" even though
+you're writing the logic yourselves - otherwise your teammates' code won't
+connect to yours. Agree on this as a group before anyone starts coding.
+--------------------------------------------------------------------------
 """
 
 import os
@@ -20,262 +34,270 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 
-# ---------------------------------------------------------------------------
-# SETUP: Load API key securely from .env (never hardcode it in the script)
-# ---------------------------------------------------------------------------
+# Loads variables from your local .env file (never hardcode the key itself)
 load_dotenv()
 API_KEY = os.getenv("GROQ_API_KEY")
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL = "llama-3.3-70b-versatile"
 
 
+# =============================================================================
+# SECTION 0 - SETUP & API CONNECTOR
+# OWNED BY: Person A (markchege10-ux)
+#
+# YOUR TASK: Write the function that actually talks to the Groq API.
+# This is the shared engine both Stage 1 and Stage 2 will call, so build
+# and test this FIRST, before Person B/C start their sections - they can't
+# test anything without it working.
+#
+# Steps to research and implement:
+#   1. Build the request headers (needs "Authorization: Bearer <API_KEY>"
+#      and "Content-Type: application/json")
+#   2. Build the JSON payload: model, messages, temperature
+#      (add "response_format": {"type": "json_object"} when force_json=True)
+#   3. Send a POST request to API_URL using the `requests` library
+#   4. Handle failures with try/except (bad key, no internet, timeout)
+#   5. Pull the actual reply text out of the response and return it
+# =============================================================================
 def call_ai(messages, force_json=False):
     """
     Sends a single request to the Groq chat completions endpoint.
-    Returns the assistant's text reply as a string, or None on failure.
 
-    messages: list of {"role": "system"/"user", "content": "..."} dicts
-    force_json: if True, asks the API to guarantee valid JSON output
+    Parameters:
+        messages (list): A list of dicts like
+            [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
+        force_json (bool): If True, tells the API to guarantee valid JSON output.
+
+    Must return:
+        str: the AI's reply text, on success
+        None: if the call fails for any reason (missing key, network error,
+              bad response) - callers rely on None to know something went wrong
     """
-    if not API_KEY:
-        print("ERROR: No API key found. Check your .env file has GROQ_API_KEY set.")
-        return None
-
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": MODEL,
-        "messages": messages,
-        "temperature": 0.4,
-    }
-    if force_json:
-        payload["response_format"] = {"type": "json_object"}
-
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
-    except requests.exceptions.RequestException as e:
-        # Covers no internet, timeout, bad status codes, etc.
-        print(f"ERROR: API call failed ({e}). Check your internet connection or API key.")
-        return None
-    except (KeyError, IndexError):
-        print("ERROR: Unexpected response shape from the API.")
-        return None
+    # TODO: Person A - implement this function
+    pass
 
 
-# ---------------------------------------------------------------------------
-# STAGE 1: Analyse reviews -> sentiment + complaints (JSON output)
-# ---------------------------------------------------------------------------
+# =============================================================================
+# SECTION 1 - STAGE 1: ANALYSE REVIEWS
+# OWNED BY: EVA-247 (Stage 1 Developer)
+#
+# YOUR TASK: Build the prompt that gets sent to the AI for Stage 1, and the
+# function that calls it and safely parses the result.
+#
+# Steps to implement build_stage1_prompt():
+#   1. Write a system_prompt using R-T-C-C-O:
+#        Role       - who is the AI? (e.g. a customer insights analyst)
+#        Task       - what should it do? (classify sentiment, find complaints)
+#        Context    - reviews may be informal / mix English and Sheng
+#        Constraints- max 3 complaint themes, JSON only, one worst review
+#        Output     - give it the EXACT JSON shape you want back (see below)
+#   2. Return a list of two dicts: {"role": "system", ...} and {"role": "user", ...}
+#      (the user message should contain the actual reviews_text)
+#
+# Steps to implement run_stage1():
+#   1. Call build_stage1_prompt(reviews_text) to get your messages
+#   2. Pass them to call_ai(messages, force_json=True)
+#   3. If call_ai returned None, return None
+#   4. Try to json.loads() the result - wrap in try/except for bad JSON
+#   5. Check the parsed dict actually has the 3 keys you expect
+#   6. Return the parsed dict (or None if anything above failed)
+# =============================================================================
 def build_stage1_prompt(reviews_text):
     """
-    R-T-C-C-O breakdown for Stage 1:
-      Role       - customer insights analyst
-      Task       - classify sentiment + extract recurring complaints
-      Context    - raw, informal reviews (may mix English/Sheng, WhatsApp style)
-      Constraints- max 3 complaint themes, valid JSON only, pick ONE most negative review
-      Output     - strict JSON schema defined below
+    Builds the R-T-C-C-O prompt for Stage 1.
+
+    Parameters:
+        reviews_text (str): the raw block of customer reviews pasted by the user
+
+    Must return:
+        list: messages in the format [{"role": "system", ...}, {"role": "user", ...}]
+
+    Your JSON output schema must exactly match this shape, since Stage 2
+    (Person C) depends on these exact key names:
+        {
+          "sentiment_counts": {"positive": 0, "neutral": 0, "negative": 0},
+          "top_complaints": ["theme1", "theme2"],
+          "most_negative_review": "verbatim text of the worst review"
+        }
     """
-    system_prompt = (
-        "You are a customer insights analyst for a small Kenyan business. "
-        "You will be given a batch of raw customer reviews, which may be informal, "
-        "short, or mix English and Sheng. Your task is to classify the sentiment "
-        "of each review, identify at most 3 recurring complaint themes, and select "
-        "the single most negative review verbatim.\n\n"
-        "Respond with ONLY valid JSON in exactly this shape, no extra commentary:\n"
-        "{\n"
-        '  "sentiment_counts": {"positive": 0, "neutral": 0, "negative": 0},\n'
-        '  "top_complaints": ["theme1", "theme2"],\n'
-        '  "most_negative_review": "verbatim text of the worst review"\n'
-        "}"
-    )
-    user_prompt = f"Here are the customer reviews:\n\n{reviews_text}"
-    return [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
+    # TODO: Person B - implement this function
+    pass
 
 
 def run_stage1(reviews_text):
-    """Calls the AI, parses JSON safely, returns a dict or None."""
-    messages = build_stage1_prompt(reviews_text)
-    raw_output = call_ai(messages, force_json=True)
+    """
+    Runs Stage 1 end to end: builds the prompt, calls the AI, parses the result.
 
-    if raw_output is None:
-        return None
+    Parameters:
+        reviews_text (str): the raw block of customer reviews
 
-    try:
-        parsed = json.loads(raw_output)
-        # Basic sanity check on the schema we expect back
-        required_keys = {"sentiment_counts", "top_complaints", "most_negative_review"}
-        if not required_keys.issubset(parsed.keys()):
-            print("ERROR: AI response was valid JSON but missing expected fields.")
-            return None
-        return parsed
-    except json.JSONDecodeError:
-        print("ERROR: AI did not return valid JSON. Try again.")
-        return None
+    Must return:
+        dict: parsed JSON matching the schema above, on success
+        None: if the API call failed or the response wasn't valid/expected JSON
+    """
+    # TODO: Person B - implement this function
+    pass
 
 
-# ---------------------------------------------------------------------------
-# STAGE 2: Draft a reply to the most negative review (uses Stage 1's output)
-# ---------------------------------------------------------------------------
+# =============================================================================
+# SECTION 2 - STAGE 2: DRAFT A REPLY
+# OWNED BY: Paulinendugi-eng (Stage 2 Developer)
+#
+# YOUR TASK: Build the prompt that drafts a reply to the worst review, using
+# Stage 1's output as input. Build the function that calls it.
+#
+# Steps to implement build_stage2_prompt():
+#   1. Write a system_prompt using R-T-C-C-O:
+#        Role       - a professional, empathetic customer service rep
+#        Task       - write a reply to the worst review
+#        Context    - the review text + complaint themes from Stage 1
+#        Constraints- under 150 words, one apology, one concrete next step,
+#                     no generic corporate filler, tone depends on `tone` param
+#        Output     - plain text reply only
+#   2. Use the `tone` parameter ("formal" or "friendly") to change the
+#      instruction you give the AI (e.g. via an if/else or a small dict)
+#   3. Return a list of two dicts, same shape as Stage 1
+#
+# Steps to implement run_stage2():
+#   1. Pull most_negative_review and top_complaints out of stage1_result
+#   2. Call build_stage2_prompt() with those plus the tone
+#   3. Pass the messages to call_ai(messages, force_json=False)
+#   4. Return whatever call_ai gives you (text or None)
+# =============================================================================
 def build_stage2_prompt(most_negative_review, complaints, tone):
     """
-    R-T-C-C-O breakdown for Stage 2:
-      Role       - professional customer service representative
-      Task       - write a reply to the worst review
-      Context    - the review text + complaint themes from Stage 1
-      Constraints- under 150 words, acknowledge issue, one apology, concrete next step
-      Output     - plain text reply, tone set by user's menu choice
-    """
-    tone_instruction = {
-        "formal": "Use a formal, professional tone suitable for an official email.",
-        "friendly": "Use a warm, friendly tone suitable for a WhatsApp or SMS reply.",
-    }[tone]
+    Builds the R-T-C-C-O prompt for Stage 2.
 
-    system_prompt = (
-        "You are a professional, empathetic customer service representative "
-        "for a small Kenyan business. Write a reply to the customer's review below. "
-        f"{tone_instruction} "
-        "Keep the reply under 150 words. Acknowledge the specific issue raised, "
-        "apologise once (do not over-apologise), and offer one concrete next step. "
-        "Avoid generic corporate filler language. Respond with the reply text only."
-    )
-    user_prompt = (
-        f"Most negative review: \"{most_negative_review}\"\n"
-        f"Known recurring complaint themes: {', '.join(complaints)}"
-    )
-    return [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
+    Parameters:
+        most_negative_review (str): the worst review text, from Stage 1's output
+        complaints (list): list of complaint theme strings, from Stage 1's output
+        tone (str): either "formal" or "friendly" - controls the reply's tone
+
+    Must return:
+        list: messages in the format [{"role": "system", ...}, {"role": "user", ...}]
+    """
+    # TODO: Person C - implement this function
+    pass
 
 
 def run_stage2(stage1_result, tone):
-    """Feeds Stage 1's output into Stage 2. Returns reply text or None."""
-    messages = build_stage2_prompt(
-        stage1_result["most_negative_review"],
-        stage1_result["top_complaints"],
-        tone,
-    )
-    return call_ai(messages, force_json=False)
+    """
+    Runs Stage 2 end to end: builds the prompt from Stage 1's result, calls the AI.
+
+    Parameters:
+        stage1_result (dict): the dict returned by run_stage1() - use its
+            "most_negative_review" and "top_complaints" keys
+        tone (str): "formal" or "friendly", chosen by the user in the menu
+
+    Must return:
+        str: the drafted reply text, on success
+        None: if the API call failed
+    """
+    # TODO: Person C - implement this function
+    pass
 
 
-# ---------------------------------------------------------------------------
-# FILE SAVING: keeps a copy of every completed run
-# ---------------------------------------------------------------------------
+# =============================================================================
+# SECTION 3 - FILE SAVING
+# OWNED BY: M-0321 (Docs / Error-Handling Lead)
+#
+# YOUR TASK: Save the results of each completed run to a file, so the user
+# has a record after the program closes.
+#
+# Steps to implement:
+#   1. Make sure an "output" folder exists (create it if not - os.makedirs
+#      with exist_ok=True)
+#   2. Build a filename that includes a timestamp so runs don't overwrite
+#      each other (see datetime.now().strftime(...))
+#   3. Put together a dict with all the relevant fields (sentiment counts,
+#      complaints, worst review, tone used, the drafted reply)
+#   4. Write it to a .json file with json.dump(), wrapped in try/except
+#      in case the file can't be written (e.g. disk full, bad permissions)
+# =============================================================================
 def save_output(stage1_result, reply_text, tone):
-    """Saves the full result of a run to a timestamped .json file."""
-    os.makedirs("output", exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filepath = os.path.join("output", f"analysis_{timestamp}.json")
+    """
+    Saves one completed run's results to a timestamped .json file in output/.
 
-    record = {
-        "timestamp": timestamp,
-        "sentiment_counts": stage1_result["sentiment_counts"],
-        "top_complaints": stage1_result["top_complaints"],
-        "most_negative_review": stage1_result["most_negative_review"],
-        "reply_tone": tone,
-        "drafted_reply": reply_text,
-    }
+    Parameters:
+        stage1_result (dict): Stage 1's result dict
+        reply_text (str): Stage 2's drafted reply (or a placeholder string
+            if Stage 2 failed)
+        tone (str): the tone that was used ("formal" or "friendly")
 
-    try:
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(record, f, indent=2)
-        print(f"\nSaved to {filepath}")
-    except OSError as e:
-        print(f"ERROR: Could not save file ({e}).")
+    Must return: nothing required, but should not crash the program if
+    saving fails - handle errors and print a message instead.
+    """
+    # TODO: Person D - implement this function
+    pass
 
 
-# ---------------------------------------------------------------------------
-# MENU / MAIN PROGRAM LOOP
-# ---------------------------------------------------------------------------
+# =============================================================================
+# SECTION 4 - MENU & MAIN PROGRAM LOOP
+# OWNED BY: M-0321 (Docs / Error-Handling Lead)
+#
+# YOUR TASK: Tie everything together. Build the menu, collect user input,
+# call the other sections in order, and handle every failure gracefully -
+# the program should NEVER crash, only print an error and return to the menu.
+#
+# Steps to implement:
+#   get_reviews_from_user() - loop on input(), collecting lines until the
+#       user types "DONE", then join them into one string
+#   choose_tone() - print a small menu (1=Formal, 2=Friendly), return the
+#       matching string ("formal"/"friendly") based on what the user typed
+#   main_menu() - print the top-level menu (1=Analyse, 2=Exit), return
+#       the user's raw choice
+#   main() - the main while-loop:
+#       1. Show main_menu(), handle "2" (exit) and invalid choices
+#       2. Call get_reviews_from_user() - if empty, print error, loop again
+#       3. Call run_stage1() - if it returns None, print error, loop again
+#       4. Print Stage 1's results nicely
+#       5. Call choose_tone()
+#       6. Call run_stage2() - if it returns None, still save what you have
+#          and print an error, then loop again
+#       7. Print the drafted reply
+#       8. Call save_output() with everything
+# =============================================================================
 def get_reviews_from_user():
     """
-    Collects multi-line review input from the user.
-    User pastes reviews (one per line) and types DONE on its own line to finish.
+    Collects multi-line review input from the user until they type DONE.
+
+    Must return:
+        str: all entered lines joined together (e.g. with "\\n")
     """
-    print("\nPaste your customer reviews below, one per line.")
-    print("Type DONE on its own line when finished.\n")
-    lines = []
-    while True:
-        line = input()
-        if line.strip().upper() == "DONE":
-            break
-        lines.append(line)
-    return "\n".join(lines)
+    # TODO: Person D - implement this function
+    pass
 
 
 def choose_tone():
-    """Menu for Stage 2 tone selection - satisfies the 'menu with 2+ choices' requirement."""
-    print("\nHow should the reply be written?")
-    print("  1. Formal (email style)")
-    print("  2. Friendly (WhatsApp/SMS style)")
-    choice = input("Enter 1 or 2: ").strip()
-    return "formal" if choice == "1" else "friendly"
+    """
+    Shows a menu asking the user to pick a reply tone.
+
+    Must return:
+        str: either "formal" or "friendly"
+    """
+    # TODO: Person D - implement this function
+    pass
 
 
 def main_menu():
-    print("=" * 55)
-    print("   CUSTOMER FEEDBACK ANALYSER")
-    print("=" * 55)
-    print("1. Analyse a batch of reviews")
-    print("2. Exit")
-    return input("Choose an option: ").strip()
+    """
+    Shows the main menu (1. Analyse reviews, 2. Exit).
+
+    Must return:
+        str: the raw text the user typed (e.g. "1" or "2")
+    """
+    # TODO: Person D - implement this function
+    pass
 
 
 def main():
-    while True:
-        choice = main_menu()
-
-        if choice == "2":
-            print("Goodbye!")
-            sys.exit(0)
-
-        if choice != "1":
-            print("Invalid option. Please choose 1 or 2.\n")
-            continue
-
-        reviews_text = get_reviews_from_user()
-
-        # ERROR HANDLING: empty input
-        if not reviews_text.strip():
-            print("ERROR: No reviews entered. Returning to menu.\n")
-            continue
-
-        print("\nAnalysing reviews...")
-        stage1_result = run_stage1(reviews_text)
-
-        # ERROR HANDLING: Stage 1 failed (bad API call or invalid JSON)
-        if stage1_result is None:
-            print("Could not complete analysis. Returning to menu.\n")
-            continue
-
-        print("\n--- STAGE 1 RESULTS ---")
-        print(f"Sentiment counts: {stage1_result['sentiment_counts']}")
-        print(f"Top complaints: {', '.join(stage1_result['top_complaints'])}")
-        print(f"Most negative review: \"{stage1_result['most_negative_review']}\"")
-
-        tone = choose_tone()
-
-        print("\nDrafting reply...")
-        reply_text = run_stage2(stage1_result, tone)
-
-        # ERROR HANDLING: Stage 2 failed
-        if reply_text is None:
-            print("Could not draft a reply. Analysis results were still generated above.\n")
-            save_output(stage1_result, "N/A - reply generation failed", tone)
-            continue
-
-        print("\n--- STAGE 2: DRAFTED REPLY ---")
-        print(reply_text)
-
-        save_output(stage1_result, reply_text, tone)
-        print()
+    """
+    The main program loop. Ties Sections 1-3 together via the menu.
+    Must never crash - every failure path should print a message and
+    return to the menu instead of raising an unhandled exception.
+    """
+    # TODO: Person D - implement this function
+    pass
 
 
 if __name__ == "__main__":
