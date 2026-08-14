@@ -121,7 +121,18 @@ def build_stage1_prompt(reviews_text):
         }
     """
     # TODO: Person B - implement this function
-    pass
+    system_prompt=("you are an expert customer review analyst.Analyse the provided customer reviews, and extract"
+    " sentiment counts, top recurring complaints, and identify the single most negative review. The reviews are"
+    " informal and may contain a mix of English and Sheng. Please provide the output as a raw json object in the exact "
+    "JSON format specified"
+    "  with a maximum of 3 complaint themes and one worst review."you MUST use this exact keys:''
+    'sentiment_counts', 'top_complaints', and 'most_negative_review'."
+ )
+    messages = [
+    {"role": "system", "content": system_prompt},
+    {"role": "user", "content": reviews_text}
+]
+    return messages
 
 
 def run_stage1(reviews_text):
