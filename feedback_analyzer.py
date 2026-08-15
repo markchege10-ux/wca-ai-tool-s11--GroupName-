@@ -148,6 +148,7 @@ def run_stage1(reviews_text):
     """
     # TODO: Person B - implement this function
     messages=build_stage1_prompt(reviews_text)
+    #send prompt to AI and parse response
     raw_response=call_ai(messages,force_json=True)
     if raw_response is None:
                             return None
