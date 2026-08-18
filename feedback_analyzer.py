@@ -1,19 +1,3 @@
-"""
---------------------------------------------------------------------------
-ROLES (see "YOUR TASK" comments throughout this file):
-  - Person A (Lead)              -> SECTION 0: Setup & API connector
-  - Person B (Stage 1 Developer) -> SECTION 1: Analyse reviews
-  - Person C (Stage 2 Developer) -> SECTION 2: Draft reply
-  - Person D (Docs/Error Lead)   -> SECTION 3: File saving
-                                     SECTION 4: Menu & main program loop
-
-IMPORTANT: Each function's docstring tells you exactly what parameters it
-receives and what it must return. Stick to this "contract" even though
-you're writing the logic yourselves - otherwise your teammates' code won't
-connect to yours. Agree on this as a group before anyone starts coding.
---------------------------------------------------------------------------
-"""
-
 import os
 import json
 import sys
