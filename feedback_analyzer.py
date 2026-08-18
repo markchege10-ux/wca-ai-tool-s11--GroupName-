@@ -1,16 +1,4 @@
 """
-Customer Feedback Analyser
-WeCan Academy - AI Course, Season 11 - End of Module Project
-
-A two-stage AI-powered tool:
-  Stage 1: Analyses a batch of customer reviews -> sentiment counts + top
-           recurring complaints + identifies the single most negative review.
-  Stage 2: Drafts a professional reply to that most negative review, in a
-           tone the user chooses from a menu (Formal / Friendly).
-
-Group: [Your Group Name Here]
-Members: [Add all 4 names here]
-
 --------------------------------------------------------------------------
 ROLES (see "YOUR TASK" comments throughout this file):
   - Person A (Lead)              -> SECTION 0: Setup & API connector
