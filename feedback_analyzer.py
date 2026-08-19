@@ -121,17 +121,21 @@ def build_stage1_prompt(reviews_text):
         }
     """
     # TODO: Person B - implement this function
-    system_prompt=("you are an expert customer review analyst.Analyse the provided customer reviews, and extract"
-    " sentiment counts, top recurring complaints, and identify the single most negative review. The reviews are"
-    " informal and may contain a mix of English and Sheng. Please provide the output as a raw json object in the exact "
-    "JSON format specified"
-    "  with a maximum of 3 complaint themes and one worst review."you MUST use this exact keys:''
-    'sentiment_counts', 'top_complaints', and 'most_negative_review'."
- )
+    system_prompt = (
+        "You are an expert customer review analyst. Analyse the provided customer reviews and extract "
+        "sentiment counts, top recurring complaints, and identify the single most negative review. "
+        "The reviews may be informal and may contain a mix of English and Sheng. "
+        "Return only a raw JSON object in the exact structure specified below: "
+        '{"sentiment_counts": {"positive": 0, "neutral": 0, "negative": 0}, '
+        '"top_complaints": ["theme1", "theme2"], "most_negative_review": "verbatim text of the worst review"}. '
+        "Use a maximum of 3 complaint themes and exactly one worst review. "
+        "The keys must be exactly: sentiment_counts, top_complaints, and most_negative_review."
+    )
+
     messages = [
-    {"role": "system", "content": system_prompt},
-    {"role": "user", "content": reviews_text}
-]
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": reviews_text},
+    ]
     return messages
 
 
@@ -186,37 +190,48 @@ def run_stage1(reviews_text):
 #   3. Pass the messages to call_ai(messages, force_json=False)
 #   4. Return whatever call_ai gives you (text or None)
 # =============================================================================
-def build_stage2_prompt(most_negative_review, complaints, tone):
+def build_stage2_prompt(most_negative_review, top_complaints, tone):
+    prompt = f"""
+    You are a professional customer service representative.
+    Write a reply to this customer's  review:
+    
+    Most negative review:
+    {most_negative_review}
+    
+    Top complaints:
+    {top_complaints}
+    
+    Tone:
+    {tone}
+    
+    Rules:
+    - Keep the reply under 150 words.
+    -Acknowledge the issue.
+    -Apologise once.
+    -Offer a clear next step.
+    -Do not blame the customer.
+    -Do not sound robotic.
+    -Match the requested tone.
     """
-    Builds the R-T-C-C-O prompt for Stage 2.
-
-    Parameters:
-        most_negative_review (str): the worst review text, from Stage 1's output
-        complaints (list): list of complaint theme strings, from Stage 1's output
-        tone (str): either "formal" or "friendly" - controls the reply's tone
-
-    Must return:
-        list: messages in the format [{"role": "system", ...}, {"role": "user", ...}]
-    """
-    # TODO: Person C - implement this function
-    pass
+    return prompt
 
 
 def run_stage2(stage1_result, tone):
-    """
-    Runs Stage 2 end to end: builds the prompt from Stage 1's result, calls the AI.
+    most_negative_review = stage1_result["most_negative_review"]
+    top_complaints = stage1_result["top_complaints"]
 
-    Parameters:
-        stage1_result (dict): the dict returned by run_stage1() - use its
-            "most_negative_review" and "top_complaints" keys
-        tone (str): "formal" or "friendly", chosen by the user in the menu
+    prompt = build_stage2_prompt(most_negative_review, top_complaints, tone)
+    response = call_ai(prompt)
+    return response 
 
-    Must return:
-        str: the drafted reply text, on success
-        None: if the API call failed
-    """
-    # TODO: Person C - implement this function
-    pass
+
+stage1_result = {
+    "most_negative_review": "The food arrived late and was cold.",
+    "top_complaints": ["Late delivery", "Cold food"]
+}
+result = run_stage2(stage1_result, "friendly")
+print(result)
+
 
 
 # =============================================================================
