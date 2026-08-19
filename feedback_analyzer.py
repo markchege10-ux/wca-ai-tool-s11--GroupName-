@@ -211,7 +211,8 @@ def build_stage2_prompt(most_negative_review, top_complaints, tone):
     -Offer a clear next step.
     -Do not blame the customer.
     -Do not sound robotic.
-    -Match the requested tone.
+    -If the tone is Friendly, sound warm and conversational.
+    -If the tone is Formal, sound professional and respectful.
     """
     return prompt
 
