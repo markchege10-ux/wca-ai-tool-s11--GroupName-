@@ -18,7 +18,14 @@ def get_reviews_from_user():
     Must return:
         str: all entered lines joined together (e.g. with "\\n")
     """
-    print ("get_reviews_from_user func")
+    print("Enter your reviews, one per line. Type DONE when finished.")
+    lines = []
+    while True:
+        line = input()
+        if line.strip().upper() == "DONE":
+            break
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def choose_tone():
