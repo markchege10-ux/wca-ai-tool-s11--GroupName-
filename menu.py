@@ -68,5 +68,14 @@ def main():
     Must never crash - every failure path should print a message and
     return to the menu instead of raising an unhandled exception.
     """
+    while True:
+        choice = main_menu()
 
-    print ("from menu file main func")
+        if choice == "2":
+            print("Goodbye!")
+            break
+        elif choice != "1":
+            print("Invalid choice, please try again.")
+            continue
+
+        
