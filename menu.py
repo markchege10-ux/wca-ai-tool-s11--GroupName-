@@ -35,7 +35,18 @@ def choose_tone():
     Must return:
         str: either "formal" or "friendly"
     """
-    print("choose_tone func")
+    while True:
+        print("Choose a reply tone:")
+        print("1. Formal")
+        print("2. Friendly")
+        choice = input("Enter 1 or 2: ").strip()
+        if choice == "1":
+            return "formal"
+        elif choice == "2":
+            return "friendly"
+        else:
+            print("Invalid choice, please try again.\n")
+
 
 
 def main_menu():
