@@ -56,7 +56,11 @@ def main_menu():
     Must return:
         str: the raw text the user typed (e.g. "1" or "2")
     """
-    print("main_menu func")
+    print("\n=== Main Menu ===")
+    print("1. Analyse reviews")
+    print("2. Exit")
+    return input("Enter your choice: ").strip()
+
 
 def main():
     """
