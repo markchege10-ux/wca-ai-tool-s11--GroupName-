@@ -34,11 +34,11 @@ def save_output(stage1_result, reply_text, tone):
         # NOTE: adjust these .get() keys if Stage 1's real dict uses
         # different field names than what's documented here.
         data = {
-            "sentiment_counts": stage1_result.get("sentiment_counts"),
-            "complaints": stage1_result.get("complaints"),
-            "worst_review": stage1_result.get("worst_review"),
-            "tone_used": tone,
-            "drafted_reply": reply_text,
+             "sentiment_counts": stage1_result.get("sentiment_counts"),
+             "top_complaints": stage1_result.get("top_complaints"),
+             "most_negative_review": stage1_result.get("most_negative_review"),
+             "tone_used": tone,
+             "drafted_reply": reply_text,
         }
 
         with open(filename, "w") as f:
