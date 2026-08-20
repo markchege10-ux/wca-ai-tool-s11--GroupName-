@@ -21,14 +21,16 @@ def build_stage2_prompt(most_negative_review, complaints, tone):
         list: messages in the format [{"role": "system", ...}, {"role": "user", ...}]
     """
     system_prompt = (
-        "You are a professional customer service representative. "
-        "Write a reply to the customer's review below. "
-        "Rules: keep the reply under 150 words, acknowledge the issue, "
-        "apologise exactly once, offer one clear next step, never blame the "
-        "customer, and don't sound robotic. "
-        f"Tone: {tone}. "
-        "If the tone is 'friendly', sound warm and conversational. "
-        "If the tone is 'formal', sound professional and respectful."
+         "You are a professional customer service representative responding "
+    "on behalf of a small Kenyan business. "
+    "Write a reply to the customer's review below. "
+    "Rules: keep the reply under 150 words, acknowledge the issue, "
+    "apologise exactly once, offer one clear next step, never blame the "
+    "customer, and don't sound robotic. "
+    f"Tone: {tone}. "
+    "If the tone is 'friendly', sound warm and conversational. "
+    "If the tone is 'formal', sound professional and respectful. "
+    "Output plain text only — no JSON, no markdown, no headers."  # Output
     )
 
     user_prompt = (
