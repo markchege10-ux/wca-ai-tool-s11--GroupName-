@@ -1,14 +1,4 @@
 import requests
-<<<<<<< HEAD
-=======
-from dotenv import load_dotenv
-
-# Loads variables from your local .env file (never hardcode the key itself)
-load_dotenv()
-API_KEY = os.getenv("GROQ_API_KEY")
-API_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "openai/gpt-oss-120b"  # heads up: check this hasn't been deprecated on Groq's end
->>>>>>> origin/main
 
 from config import GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL
 
