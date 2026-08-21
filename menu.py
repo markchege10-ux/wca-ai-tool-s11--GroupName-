@@ -75,12 +75,12 @@ def get_time_based_greeting():
   else:
     return "evening"
 
-def main():
+def main_loop():
     """
     The main program loop. Ties Sections 1-3 together via the menu.
     Must never crash - every failure path should print a message and
     return to the menu instead of raising an unhandled exception.
-    """
+    """  
     while True:
         try:
             choice = main_menu()
