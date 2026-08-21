@@ -62,12 +62,16 @@ def main_menu():
     return input("Enter your choice: ").strip()
 
 
-def main():
+def main_loop():
     """
     The main program loop. Ties Sections 1-3 together via the menu.
     Must never crash - every failure path should print a message and
     return to the menu instead of raising an unhandled exception.
     """
+    from stage_1 import run_stage1
+    from stage_2 import run_stage2
+    from file_output import save_output
+
     while True:
         choice = main_menu()
 
@@ -78,4 +82,34 @@ def main():
             print("Invalid choice, please try again.")
             continue
 
-        
+        try:
+            reviews_text = get_reviews_from_user()
+            if not reviews_text.strip():
+                print("No reviews entered. Returning to menu.\n")
+                continue
+
+            print("\nAnalysing reviews...")
+            stage1_result = run_stage1(reviews_text)
+            if stage1_result is None:
+                print("Sorry, analysis failed (API error or bad response). Returning to menu.\n")
+                continue
+
+            print(f"Sentiment counts: {stage1_result['sentiment_counts']}")
+            print(f"Top complaints: {', '.join(stage1_result['top_complaints'])}")
+            print(f"Most negative review: {stage1_result['most_negative_review']}\n")
+
+            tone = choose_tone()
+
+            print("\nDrafting a reply...")
+            reply_text = run_stage2(stage1_result, tone)
+            if reply_text is None:
+                print("Sorry, drafting the reply failed (API error). Returning to menu.\n")
+                continue
+
+            print(f"\nDrafted reply ({tone}):\n{reply_text}\n")
+
+            save_output(stage1_result, reply_text, tone)
+
+        except Exception as e:
+            print(f"Something went wrong ({e}). Returning to menu.\n")
+            continue
