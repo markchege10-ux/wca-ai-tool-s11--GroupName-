@@ -309,7 +309,9 @@ WCA Customer Feedback Analyser closed by user. Goodbye!
 ### Team
 - Group name: wca-ai-tool-s11-Group
 - Members:
+```shh
     Member 1 — markchege10-ux
     Member 2 — EVA-247
     Member 3 — paulinendugi-eng
     Member 4 — M-0321
+```
