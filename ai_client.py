@@ -1,14 +1,6 @@
-import os
-
 import requests
-from dotenv import load_dotenv
 
-# Loads variables from your local .env file (never hardcode the key itself)
-load_dotenv()
-API_KEY = os.getenv("GROQ_API_KEY")
-API_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "llama-3.3-70b-versatile"  # heads up: check this hasn't been deprecated on Groq's end
-
+from config import GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL
 
 # =============================================================================
 # SECTION 0 - SETUP & API CONNECTOR
@@ -28,17 +20,14 @@ def call_ai(messages, force_json=False):
         None: if the call fails for any reason (missing key, network error,
               bad response) - callers rely on None to know something went wrong
     """
-    if not API_KEY:
-        print("ERROR: No API key found. Check your .env file has GROQ_API_KEY set.")
-        return None
 
     headers = {
-        "Authorization": f"Bearer {API_KEY}",
+        "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json",
     }
 
     payload = {
-        "model": MODEL,
+        "model": GROQ_MODEL,
         "messages": messages,
         "temperature": 0.4,
     }
@@ -47,13 +36,39 @@ def call_ai(messages, force_json=False):
         payload["response_format"] = {"type": "json_object"}
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
+        response = requests.post(
+            GROQ_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=30,
+        )
+
+        if not response.ok:
+            print(f"ERROR: Groq API returned HTTP {response.status_code}")
+
+            try:
+                print("Groq error:", response.json())
+            except ValueError:
+                print("Groq response:", response.text)
+
+            return None
+
         data = response.json()
+
         return data["choices"][0]["message"]["content"]
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: API call failed ({e}). Check your internet connection or API key.")
+
+    except requests.exceptions.Timeout:
+        print("ERROR: Groq API request timed out.")
         return None
-    except (KeyError, IndexError):
-        print("ERROR: Unexpected response shape from the API.")
+
+    except requests.exceptions.ConnectionError:
+        print("ERROR: Could not connect to Groq.")
+        return None
+
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Request failed: {e}")
+        return None
+
+    except (KeyError, IndexError, TypeError, ValueError) as e:
+        print(f"ERROR: Unexpected Groq response: {e}")
         return None
