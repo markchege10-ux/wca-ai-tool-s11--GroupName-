@@ -10,6 +10,10 @@ YOUR TASK: Tie everything together. Build the menu, collect user input,
 call the other sections in order, and handle every failure gracefully -
 the program should NEVER crash, only print an error and return to the menu.
 """
+from stage_1 import run_stage1
+from stage_2 import run_stage2
+from file_output import save_output
+from datetime import datetime
 
 def get_reviews_from_user():
     """
@@ -48,7 +52,6 @@ def choose_tone():
             print("Invalid choice, please try again.\n")
 
 
-
 def main_menu():
     """
     Shows the main menu (1. Analyse reviews, 2. Exit).
@@ -56,11 +59,21 @@ def main_menu():
     Must return:
         str: the raw text the user typed (e.g. "1" or "2")
     """
-    print("\n=== Main Menu ===")
+    print("\nWCA Customer Feedback Analyser")
     print("1. Analyse reviews")
     print("2. Exit")
     return input("Enter your choice: ").strip()
 
+# improve my app exist message
+def get_time_based_greeting():
+  """Returns 'Morning', 'Afternoon', or 'Evening' based on the current time."""
+  hour = datetime.now().hour
+  if 5 <= hour < 12:
+    return "morning"
+  elif 12 <= hour < 17:
+    return "afternoon"
+  else:
+    return "evening"
 
 def main():
     """
@@ -72,10 +85,34 @@ def main():
         choice = main_menu()
 
         if choice == "2":
-            print("Goodbye!")
+            time_word = get_time_based_greeting()
+            print(f"Thank you for using WCA Customer Feedback Analyser. Goodbye! Have a wonderful {time_word}!")
             break
         elif choice != "1":
             print("Invalid choice, please try again.")
             continue
 
-        
+        review_text = get_reviews_from_user()
+        if not review_text.strip():
+            print("No reviews entered. Returning to menu.")
+            continue
+
+        stage1_result = run_stage1(review_text)
+        if stage1_result is None:
+            print("Something went wrong analysing the reviews. Returning to menu.")
+            continue
+
+        print("\n--- Analysis Results ---")
+        print(stage1_result)
+
+        tone = choose_tone()
+
+        reply_text = run_stage2(review_text, tone)
+        if reply_text is None:
+            reply_text = "[No reply could be generated]"
+            print("Something went wrong drafting the reply.")
+
+        print("\n--- Drafted Reply ---")
+        print(reply_text)
+
+        save_output(stage1_result, reply_text, tone)

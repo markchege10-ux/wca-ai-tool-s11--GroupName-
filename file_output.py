@@ -28,8 +28,8 @@ def save_output(stage1_result, reply_text, tone):
     try:
         os.makedirs("output", exist_ok=True)
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = os.path.join("output", f"run_{timestamp}.json")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = os.path.join("output", f"feedback_analysis_{timestamp}.json")
 
         # NOTE: adjust these .get() keys if Stage 1's real dict uses
         # different field names than what's documented here.
