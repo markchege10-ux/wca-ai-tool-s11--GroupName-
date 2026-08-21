@@ -82,37 +82,52 @@ def main():
     return to the menu instead of raising an unhandled exception.
     """
     while True:
-        choice = main_menu()
+        try:
+            choice = main_menu()
 
-        if choice == "2":
-            time_word = get_time_based_greeting()
-            print(f"Thank you for using WCA Customer Feedback Analyser. Goodbye! Have a wonderful {time_word}!")
-            break
-        elif choice != "1":
-            print("Invalid choice, please try again.")
-            continue
+            if choice == "2":
+                time_word = get_time_based_greeting()
+                print(
+                    f"Thank you for using WCA Customer Feedback Analyser. "
+                    f"Goodbye! Have a wonderful {time_word}!"
+                )
+                break
 
-        review_text = get_reviews_from_user()
-        if not review_text.strip():
-            print("No reviews entered. Returning to menu.")
-            continue
+            if choice != "1":
+                print("Invalid choice, please try again.")
+                continue
 
-        stage1_result = run_stage1(review_text)
-        if stage1_result is None:
-            print("Something went wrong analysing the reviews. Returning to menu.")
-            continue
+            review_text = get_reviews_from_user()
 
-        print("\n--- Analysis Results ---")
-        print(stage1_result)
+            if not review_text.strip():
+                print("No reviews entered. Returning to menu.")
+                continue
 
-        tone = choose_tone()
+            stage1_result = run_stage1(review_text)
 
-        reply_text = run_stage2(review_text, tone)
-        if reply_text is None:
-            reply_text = "[No reply could be generated]"
-            print("Something went wrong drafting the reply.")
+            if stage1_result is None:
+                print(
+                    "Something went wrong analysing the reviews. "
+                    "Returning to menu."
+                )
+                continue
 
-        print("\n--- Drafted Reply ---")
-        print(reply_text)
+            print("\n--- Analysis Results ---")
+            print(stage1_result)
 
-        save_output(stage1_result, reply_text, tone)
+            tone = choose_tone()
+
+            reply_text = run_stage2(review_text, tone)
+
+            if reply_text is None:
+                print("Something went wrong drafting the reply.")
+                reply_text = "[No reply could be generated]"
+
+            print("\n--- Drafted Reply ---")
+            print(reply_text)
+
+            save_output(stage1_result, reply_text, tone)
+
+        except Exception as e:
+            print(f"\nAn unexpected error occurred: {e}")
+            print("Returning to the main menu.")
