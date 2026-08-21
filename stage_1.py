@@ -54,14 +54,34 @@ def run_stage1(reviews_text):
         None: if the API call failed or the response wasn't valid/expected JSON
     """
     messages = build_stage1_prompt(reviews_text)
+
     raw_response = call_ai(messages, force_json=True)
+
     if raw_response is None:
+        print("ERROR: Stage 1 AI call failed.")
         return None
+
     try:
         data = json.loads(raw_response)
-    except (json.JSONDecodeError, TypeError):
+    except (json.JSONDecodeError, TypeError) as e:
+        print(f"ERROR: Stage 1 returned invalid JSON: {e}")
+        print("Raw response:", raw_response)
         return None
-    required_keys = ["sentiment_counts", "top_complaints", "most_negative_review"]
-    if all(key in data for key in required_keys):
-        return data
-    return None
+
+    required_keys = [
+        "sentiment_counts",
+        "top_complaints",
+        "most_negative_review",
+    ]
+
+    missing_keys = [
+        key for key in required_keys
+        if key not in data
+    ]
+
+    if missing_keys:
+        print(f"ERROR: Stage 1 response missing keys: {missing_keys}")
+        print("Stage 1 response:", data)
+        return None
+
+    return data
