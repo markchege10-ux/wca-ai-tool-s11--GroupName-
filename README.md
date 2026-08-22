@@ -73,5 +73,8 @@ Follow the on-screen menu:
 
 ## Team
 
-- Group name: _fill in_
-- Members: _fill in all 4 names + GitHub usernames_
+- Members names
+  1. Mark Muraya
+  2. Pauline Wachinga
+  3. Evalyne Nduku
+  4. Maureen Wakonyo
